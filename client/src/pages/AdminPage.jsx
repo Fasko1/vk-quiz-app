@@ -1,11 +1,30 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { io } from "socket.io-client"
+
+const socket = io("http://localhost:5000")
 
 function AdminPage() {
-  const [quizTitle, setQuizTitle] = useState("")
-  const [question, setQuestion] = useState("")
+  const [roomCode, setRoomCode] = useState("")
+  const [players, setPlayers] = useState([])
 
-  function createQuiz() {
-    alert(`Квиз "${quizTitle}" создан!`)
+  useEffect(() => {
+    socket.emit("createRoom")
+
+    socket.on("roomCreated", (code) => {
+      setRoomCode(code)
+    })
+
+    socket.on("playersUpdated", (updatedPlayers) => {
+      setPlayers(updatedPlayers)
+    })
+  }, [])
+
+  function startQuiz() {
+    socket.emit("startQuiz", roomCode)
+  }
+
+  function nextQuestion() {
+    socket.emit("nextQuestion", roomCode)
   }
 
   return (
@@ -13,28 +32,24 @@ function AdminPage() {
       <div className="card">
         <h1>Панель организатора</h1>
 
-        <input
-          type="text"
-          placeholder="Название квиза"
-          value={quizTitle}
-          onChange={(e) => setQuizTitle(e.target.value)}
-        />
+        <h2>Код комнаты:</h2>
+        <h1>{roomCode}</h1>
 
-        <input
-          type="text"
-          placeholder="Вопрос"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-        />
-
-        <input type="text" placeholder="Ответ 1" />
-        <input type="text" placeholder="Ответ 2" />
-        <input type="text" placeholder="Ответ 3" />
-        <input type="text" placeholder="Ответ 4" />
-
-        <button onClick={createQuiz}>
-          Создать квиз
+        <button onClick={startQuiz}>
+          Начать квиз
         </button>
+
+        <button onClick={nextQuestion}>
+          Следующий вопрос
+        </button>
+
+        <h2>Игроки:</h2>
+
+        {players.map((player, index) => (
+          <p key={index}>
+            {player.name} — {player.score} баллов
+          </p>
+        ))}
       </div>
     </div>
   )
